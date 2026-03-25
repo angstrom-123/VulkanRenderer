@@ -18,6 +18,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <string>
 #include <vulkan/vulkan_core.h>
 
 #define SHADER_DIR "src/Shader/"
@@ -310,10 +311,30 @@ void VulkanEngine::InitVulkan()
     VK_CHECK(glfwCreateWindowSurface(m_Instance, m_Window, nullptr, &m_Surface));
 
     vkb::PhysicalDeviceSelector selector { vkbInstance };
+    std::vector<std::string> devices = selector.set_surface(m_Surface)
+                                               .select_device_names()
+                                               .value();
+    if (devices.size() == 0) {
+        std::cout << "Error: " 
+                  << __func__ 
+                  << ": Failed to find physical device" 
+                  << std::endl;
+        abort();
+    }
+    if (devices.size() == 1) {
+        std::cout << "Warning: " 
+                  << __func__ 
+                  << ": Only one physical device found (expected at least 2)" 
+                  << std::endl
+                  << "Defaulted to: "
+                  << devices.front()
+                  << std::endl;
+    }
     vkb::PhysicalDevice physicalDevice = selector.set_minimum_version(1, 1)
                                                  .set_surface(m_Surface)
                                                  .select()
                                                  .value();
+    std::cout << "Info: " << __func__ << ": Selected physical device: " << physicalDevice.name << std::endl;
     vkb::DeviceBuilder deviceBuilder { physicalDevice };
     vkb::Device vkbDevice = deviceBuilder.build().value();
 
